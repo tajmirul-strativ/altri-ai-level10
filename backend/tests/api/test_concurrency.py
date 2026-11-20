@@ -1,76 +1,24 @@
 """Concurrent requests (brief Part 3: "Concurrent Make it an Issue requests return one Issue").
 
-These need real commits, so they run against their own scratch database, reset to the seed
-before each test, instead of the shared rolled-back session.
+These need real commits, so they use the committing scratch database (tests/api/conftest.py).
 """
 
 import threading
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
 
-import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine, text
-from sqlalchemy.engine import make_url
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import Engine, text
+from sqlalchemy.orm import sessionmaker
 
-from app.clock import FrozenClock, get_clock
-from app.db import get_db
-from app.main import app
 from app.models import Measurable, User
-from app.seed import read_seed, reset_database
 from app.services.issues import make_it_an_issue
-from tests.conftest import SEED_NOW, TEST_DATABASE_URL
-from tests.dbutil import alembic, drop_database, recreate_database
+from tests.conftest import SEED_NOW
 
 LEAD = "/api/teams/team_lead"
 CELL = f"{LEAD}/measurables/m1/scores/2026-10-26/issue"  # off track, no open Issue
 WEEK = date(2026, 10, 26)
-
-
-@pytest.fixture(scope="module")
-def scratch_engine() -> Iterator[Engine]:
-    url = make_url(TEST_DATABASE_URL).set(database="l10_concurrency")
-    url_text = url.render_as_string(hide_password=False)
-    recreate_database(url_text)
-    engine = create_engine(url_text, pool_size=20, max_overflow=0)
-    with engine.begin() as conn:
-        alembic(conn, "upgrade", "head")
-    yield engine
-    engine.dispose()
-    drop_database(url_text)
-
-
-@pytest.fixture
-def committing_api(scratch_engine: Engine) -> Iterator[Callable[[str], TestClient]]:
-    """Clients whose requests each get their own session and really commit."""
-    factory = sessionmaker(bind=scratch_engine, expire_on_commit=False)
-    with factory() as db:
-        reset_database(db, read_seed())
-        db.commit()
-
-    def get_test_db() -> Iterator[Session]:
-        with factory() as session:
-            yield session
-
-    clock = FrozenClock(SEED_NOW)
-    app.dependency_overrides[get_db] = get_test_db
-    app.dependency_overrides[get_clock] = lambda: clock
-    clients: list[TestClient] = []
-
-    def make(user_id: str) -> TestClient:
-        c = TestClient(app)
-        clients.append(c)
-        assert c.post("/api/auth/login", json={"user_id": user_id}).status_code == 200
-        return c
-
-    try:
-        yield make
-    finally:
-        for c in clients:
-            c.close()
-        app.dependency_overrides.clear()
 
 
 def run_together(calls: list[Callable[[], object]]) -> list[object]:
