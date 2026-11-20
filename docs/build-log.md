@@ -65,3 +65,7 @@ What was built, why, and what was traded off. Newest last. Design detail: [desig
 - Each open Issue shows a "N To-Dos · M done" chip ([issues-section.tsx](../frontend/src/features/issues/issues-section.tsx)), so the link reads both ways.
 - Rejected: nesting To-Dos inside Issue cards — solving an Issue removes it from the open list and its To-Dos would vanish.
 - Timer shows minutes past 60 as "60:00", not "1:00:00".
+
+## 2026-11-21 — Clock survives restarts; Issue To-Dos expand inline
+- **Clock:** the running clock's start (wall time, per APP_NOW) is stored in `app_clock` (migration 0002); every process computes `APP_NOW + elapsed since that start` ([clock.py](../backend/app/clock.py)). *Reverses the 2026-11-20 limitation* where each API restart jumped back to APP_NOW, giving new rows earlier timestamps than old ones and freezing live timers. `make reset` clears it and restarts the API.
+- **Issue To-Dos:** the "N To-Dos" chip on an Issue expands that Issue's To-Dos inline, from any meeting ([issues-section.tsx](../frontend/src/features/issues/issues-section.tsx)). The meeting panel still lists only this meeting's new To-Dos (brief: Conclude recaps the meeting's new To-Dos).

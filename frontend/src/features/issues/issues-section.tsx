@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BarChart3, CheckCircle2, ListPlus, ListTodo, Plus } from "lucide-react";
+import { BarChart3, CheckCircle2, ChevronDown, ListPlus, ListTodo, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -14,7 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import type { Issue, Team } from "@/lib/api";
+import { TodoItem } from "@/features/todos/todos-section";
+import type { Issue, Team, Todo } from "@/lib/api";
 import { useCreateIssue, useIssues, useMe, useSetPriority, useTodos } from "@/lib/queries";
 import { formatDay, formatTimestamp } from "@/lib/time";
 
@@ -42,15 +43,12 @@ export function IssuesSection({ team, description }: Props) {
   const current = view === "open" ? open : solved;
   const timeZone = useTimeZone();
   const todos = useTodos(team.id);
-  const todoCounts = useMemo(() => {
-    const counts: Record<string, { total: number; done: number }> = {};
+  const todosByIssue = useMemo(() => {
+    const byIssue: Record<string, Todo[]> = {};
     for (const t of todos.data?.todos ?? []) {
-      if (!t.source_issue) continue;
-      const c = (counts[t.source_issue.id] ??= { total: 0, done: 0 });
-      c.total += 1;
-      if (t.done_at) c.done += 1;
+      if (t.source_issue) (byIssue[t.source_issue.id] ??= []).push(t);
     }
-    return counts;
+    return byIssue;
   }, [todos.data]);
 
   return (
@@ -82,7 +80,7 @@ export function IssuesSection({ team, description }: Props) {
         ) : view === "open" ? (
           <ol className="space-y-2" aria-label="Open issues in priority order">
             {current.data.map((issue, index) => (
-              <OpenIssue key={issue.id} team={team} issue={issue} rank={index + 1} todoCount={todoCounts[issue.id]} />
+              <OpenIssue key={issue.id} team={team} issue={issue} rank={index + 1} todos={todosByIssue[issue.id] ?? []} timeZone={timeZone} />
             ))}
           </ol>
         ) : (
@@ -151,16 +149,20 @@ function OpenIssue({
   team,
   issue,
   rank,
-  todoCount,
+  todos,
+  timeZone,
 }: {
   team: Team;
   issue: Issue;
   rank: number;
-  todoCount?: { total: number; done: number };
+  /** Every To-Do linked to this Issue, from any meeting. */
+  todos: Todo[];
+  timeZone: string;
 }) {
   const setPriority = useSetPriority(team.id);
   const me = useMe();
-  const timeZone = useTimeZone();
+  const [showTodos, setShowTodos] = useState(false);
+  const doneCount = todos.filter((t) => t.done_at).length;
   const [dialog, setDialog] = useState<"solve" | "todo" | null>(null);
   const owners = useMemo(() => team.members.filter((m) => m.role !== "observer"), [team.members]);
   const selectId = `priority-${issue.id}`;
@@ -182,12 +184,19 @@ function OpenIssue({
                 {issue.source.measurable_name} · week of {formatDay(issue.source.week_start)}
               </Badge>
             )}
-            {todoCount && (
-              <Badge variant="secondary" className="gap-1 tabular-nums">
+            {todos.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setShowTodos((v) => !v)}
+                aria-expanded={showTodos}
+                aria-controls={`issue-todos-${issue.id}`}
+                className="inline-flex items-center gap-1 rounded-full border bg-secondary px-2 py-0.5 font-medium text-secondary-foreground tabular-nums hover:bg-secondary/70 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
                 <ListTodo className="size-3" aria-hidden />
-                {todoCount.total} To-Do{todoCount.total === 1 ? "" : "s"}
-                {todoCount.done > 0 && ` · ${todoCount.done} done`}
-              </Badge>
+                {todos.length} To-Do{todos.length === 1 ? "" : "s"}
+                {doneCount > 0 && ` · ${doneCount} done`}
+                <ChevronDown className={`size-3 transition-transform ${showTodos ? "rotate-180" : ""}`} aria-hidden />
+              </button>
             )}
           </div>
         </div>
@@ -230,6 +239,13 @@ function OpenIssue({
           )}
         </div>
       </div>
+      {showTodos && todos.length > 0 && (
+        <ul id={`issue-todos-${issue.id}`} className="mt-3 space-y-2 border-t pt-3 sm:ml-10" aria-label={`To-Dos for ${issue.title}`}>
+          {todos.map((t) => (
+            <TodoItem key={t.id} team={team} todo={t} timeZone={timeZone} showSource={false} />
+          ))}
+        </ul>
+      )}
       {dialog === "solve" && (
         <SolveDialog teamId={team.id} issue={issue} open onOpenChange={(o) => !o && setDialog(null)} />
       )}

@@ -36,6 +36,7 @@ from app.models import (
 )
 
 ALL_TABLES = (
+    "app_clock",  # reset restarts the running clock at APP_NOW (after an API restart)
     "meeting_ratings", "meeting_attendees", "meetings", "todos", "issues", "milestones",
     "rocks", "scores", "measurables", "team_memberships", "teams", "users", "companies",
 )  # fmt: skip

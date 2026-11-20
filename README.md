@@ -13,7 +13,7 @@ docker compose up --build        # or: make up
 - App: http://localhost:3000 — pick a seeded user to sign in (e.g. **Blake Brooks** in one browser, **Casey Cho** in another, both on Leadership).
 - API docs (OpenAPI): http://localhost:8000/api/docs
 - Postgres is exposed on host port **5433**. Migrations and the seed run on start; the seed is safe to rerun (it only inserts missing rows). `make reset` restores a fresh seed.
-- "Now" comes from `APP_NOW` (default `2026-11-11T15:00:00Z`) and then ticks in real time, so meeting timers move.
+- "Now" comes from `APP_NOW` (default `2026-11-11T15:00:00Z`) and then ticks in real time, so meeting timers move. The clock's start is stored, so restarts continue the same timeline; `make reset` starts it again at `APP_NOW`.
 
 ## Tests
 
@@ -56,7 +56,6 @@ Prints every computed value from brief 2.6 as JSON, for a **freshly seeded** thr
 ## Known limitations
 
 - Past meeting summaries are computed from current data, so editing an old score changes an old summary. The fix (store a copy at End) is described in the decision record, not built.
-- Restarting the API resets the running clock to `APP_NOW`; rows created in an earlier run can then sit in the "future".
 - Login is a user picker with a signed session cookie: no passwords (sign-up is out of scope).
 - One company per deployment; one LISTEN connection per API process (fine for many processes, not tuned for very large fan-out).
 - No meeting history page (out of scope); summaries are reachable by URL and API.

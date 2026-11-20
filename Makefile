@@ -31,9 +31,11 @@ test-local: db-up
 rules-report: db-up
 	@docker compose run --rm --no-deps -e APP_NOW=$(APP_NOW) backend python -m app.cli rules-report --fresh
 
-## Reset the app database to the seed (drops everything users added).
+## Reset the app database to the seed (drops everything users added) and restart the API,
+## so the app clock starts again at APP_NOW.
 reset: db-up
 	docker compose run --rm --no-deps backend python -m app.cli reset
+	docker compose restart backend
 
 db-up:
 	docker compose up -d --wait db
