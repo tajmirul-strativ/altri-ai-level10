@@ -15,6 +15,30 @@ services:
       timeout: 3s
       retries: 30
 
+  # API: migrates, loads the seed (safe to rerun), then serves on :8000 (docs at /api/docs).
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://l10:l10@db:5432/l10
+      APP_NOW: ${APP_NOW:-2026-11-11T15:00:00Z}
+      CLOCK_MODE: ${CLOCK_MODE:-running}
+      SESSION_SECRET: ${SESSION_SECRET:-local-demo-secret-change-me}
+    volumes:
+      - ./docs:/docs:ro   # seed.json
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "alembic upgrade head && python -m app.cli seed &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+
   # Runs the backend test suite against the db service: `make test`
   backend-tests:
     profiles: ["test"]
