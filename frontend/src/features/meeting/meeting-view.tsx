@@ -1,11 +1,9 @@
 "use client";
 
-import { Info } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
 import { ErrorState, SectionSkeleton } from "@/components/page-states";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { IssuesSection } from "@/features/issues/issues-section";
 import { ScorecardSection } from "@/features/scorecard/scorecard-section";
@@ -55,17 +53,17 @@ export function MeetingView({ teamId, meetingId }: { teamId: string; meetingId: 
         isFacilitator={isFacilitator}
       />
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">{team.name} · Level 10 Meeting</h1>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">{team.name} · Level 10 Meeting</h1>
+          <p className="text-sm text-muted-foreground" aria-live="polite">
+            {SECTION_HINT[meeting.section]}
+          </p>
+        </div>
         <p className="text-sm text-muted-foreground" aria-live="polite">
           {meeting.attendees.length} attending: {meeting.attendees.map((a) => a.name).join(", ")}
         </p>
       </div>
-
-      <Alert>
-        <Info />
-        <AlertDescription aria-live="polite">{SECTION_HINT[meeting.section]}</AlertDescription>
-      </Alert>
 
       {meeting.section === "scorecard" && (
         <ScorecardSection

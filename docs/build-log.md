@@ -73,3 +73,6 @@ What was built, why, and what was traded off. Newest last. Design detail: [desig
 ## 2026-11-21 — Meeting panel shows all Issue To-Dos
 - Panel renamed "To-Dos by Issue": every To-Do linked to an Issue, grouped by Issue; ones created in the current meeting get a **New** badge (keeps the brief's Conclude recap of new To-Dos). Unlinked To-Dos stay on the Team page.
 - The Issue "N To-Dos" chip is a plain count badge again. *Reverses the inline-expand chip from the previous entry*, per owner request.
+
+## 2026-11-21 — Section hint is a muted subtitle
+- The per-section agenda hint moved from a bordered info `Alert` to one line of muted text under the meeting title ([meeting-view.tsx](../frontend/src/features/meeting/meeting-view.tsx)). Weekly attendees stop reading alert boxes; the hint still guides newcomers without taking space. Rejected: removing hints (EOS newcomers lose the flow) and a dismiss toggle (extra state for little gain).
