@@ -32,23 +32,24 @@ function groupByIssue(todos: Todo[], openIssueIds: string[]): Group[] {
   return [...groups.values()].sort((a, b) => rank(a) - rank(b));
 }
 
-/** To-Dos created since the meeting started (the IDS section's output). */
+/** Every To-Do linked to an Issue, grouped by Issue. Ones created in this meeting are marked "New". */
 export function NewTodosCard({ team, meeting, me }: { team: Team; meeting: Meeting; me: Me }) {
   const todos = useTodos(team.id);
   const openIssues = useIssues(team.id, "open");
-  const created = todos.data?.todos.filter((t) => t.created_at >= meeting.started_at) ?? [];
-  const groups = groupByIssue(created, openIssues.data?.map((i) => i.id) ?? []);
+  const linked = todos.data?.todos.filter((t) => t.source_issue) ?? [];
+  const groups = groupByIssue(linked, openIssues.data?.map((i) => i.id) ?? []);
+  const isNew = (t: Todo) => t.created_at >= meeting.started_at;
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">New To-Dos from this meeting</CardTitle>
-        <CardDescription>Grouped by Issue. Read them out: who does what, by when.</CardDescription>
+        <CardTitle className="text-lg">To-Dos by Issue</CardTitle>
+        <CardDescription>To-Dos added in this meeting are marked New. Read them out: who does what, by when.</CardDescription>
       </CardHeader>
       <CardContent>
         {todos.isPending ? (
           <SectionSkeleton rows={2} />
-        ) : created.length === 0 ? (
-          <EmptyState>No To-Dos were added in this meeting.</EmptyState>
+        ) : linked.length === 0 ? (
+          <EmptyState>No To-Dos are linked to an Issue yet.</EmptyState>
         ) : (
           <div className="space-y-5">
             {groups.map((g) => (
@@ -69,7 +70,7 @@ export function NewTodosCard({ team, meeting, me }: { team: Team; meeting: Meeti
                 </div>
                 <ul className="space-y-2">
                   {g.todos.map((t) => (
-                    <TodoItem key={t.id} team={team} todo={t} timeZone={me.company.timezone} showSource={false} />
+                    <TodoItem key={t.id} team={team} todo={t} timeZone={me.company.timezone} showSource={false} isNew={isNew(t)} />
                   ))}
                 </ul>
               </section>

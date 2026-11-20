@@ -101,12 +101,15 @@ export function TodoItem({
   todo,
   timeZone,
   showSource = true,
+  isNew = false,
 }: {
   team: Team;
   todo: Todo;
   timeZone: string;
   /** Hide the linked Issue when the list is already grouped by Issue. */
   showSource?: boolean;
+  /** Marks a To-Do created in the current meeting. */
+  isNew?: boolean;
 }) {
   const toggle = useToggleTodo(team.id);
   const id = `todo-${todo.id}`;
@@ -125,6 +128,7 @@ export function TodoItem({
           {todo.title}
         </label>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          {isNew && <Badge className="h-5">New</Badge>}
           <span>{todo.owner.name}</span>
           <span className="tabular-nums">Due {formatDay(todo.due_date)}</span>
           {todo.done_at && (

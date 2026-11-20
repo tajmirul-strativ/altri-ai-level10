@@ -69,3 +69,7 @@ What was built, why, and what was traded off. Newest last. Design detail: [desig
 ## 2026-11-21 — Clock survives restarts; Issue To-Dos expand inline
 - **Clock:** the running clock's start (wall time, per APP_NOW) is stored in `app_clock` (migration 0002); every process computes `APP_NOW + elapsed since that start` ([clock.py](../backend/app/clock.py)). *Reverses the 2026-11-20 limitation* where each API restart jumped back to APP_NOW, giving new rows earlier timestamps than old ones and freezing live timers. `make reset` clears it and restarts the API.
 - **Issue To-Dos:** the "N To-Dos" chip on an Issue expands that Issue's To-Dos inline, from any meeting ([issues-section.tsx](../frontend/src/features/issues/issues-section.tsx)). The meeting panel still lists only this meeting's new To-Dos (brief: Conclude recaps the meeting's new To-Dos).
+
+## 2026-11-21 — Meeting panel shows all Issue To-Dos
+- Panel renamed "To-Dos by Issue": every To-Do linked to an Issue, grouped by Issue; ones created in the current meeting get a **New** badge (keeps the brief's Conclude recap of new To-Dos). Unlinked To-Dos stay on the Team page.
+- The Issue "N To-Dos" chip is a plain count badge again. *Reverses the inline-expand chip from the previous entry*, per owner request.
