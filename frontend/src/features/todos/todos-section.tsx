@@ -96,7 +96,18 @@ export function CompletionRate({ data }: { data: Todos }) {
   );
 }
 
-export function TodoItem({ team, todo, timeZone }: { team: Team; todo: Todo; timeZone: string }) {
+export function TodoItem({
+  team,
+  todo,
+  timeZone,
+  showSource = true,
+}: {
+  team: Team;
+  todo: Todo;
+  timeZone: string;
+  /** Hide the linked Issue when the list is already grouped by Issue. */
+  showSource?: boolean;
+}) {
   const toggle = useToggleTodo(team.id);
   const id = `todo-${todo.id}`;
   return (
@@ -128,7 +139,7 @@ export function TodoItem({ team, todo, timeZone }: { team: Team; todo: Todo; tim
               Overdue
             </Badge>
           )}
-          {todo.source_issue && (
+          {showSource && todo.source_issue && (
             <span className="inline-flex items-center gap-1">
               <Link2 className="size-3" aria-hidden />
               {todo.source_issue.title}

@@ -39,11 +39,8 @@ export function formatTimestamp(iso: string, timeZone: string): string {
   }).format(new Date(iso));
 }
 
-/** 125 -> "2:05", -5 -> "0:00" */
+/** Timer text in minutes and seconds: 125 -> "2:05", 3600 -> "60:00". Negative counts as 0. */
 export function formatDuration(totalSeconds: number): string {
   const s = Math.max(0, Math.floor(totalSeconds));
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = String(s % 60).padStart(2, "0");
-  return h > 0 ? `${h}:${String(m).padStart(2, "0")}:${sec}` : `${m}:${sec}`;
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }

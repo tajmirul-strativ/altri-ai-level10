@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { BarChart3, CheckCircle2, ListPlus, Plus } from "lucide-react";
+import { BarChart3, CheckCircle2, ListPlus, ListTodo, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { NativeSelect, NativeSelectOption } from "@/components/ui/native-select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import type { Issue, Team } from "@/lib/api";
-import { useCreateIssue, useIssues, useMe, useSetPriority } from "@/lib/queries";
+import { useCreateIssue, useIssues, useMe, useSetPriority, useTodos } from "@/lib/queries";
 import { formatDay, formatTimestamp } from "@/lib/time";
 
 import { AddTodoDialog, SolveDialog } from "./issue-dialogs";
@@ -41,6 +41,17 @@ export function IssuesSection({ team, description }: Props) {
   const solved = useIssues(team.id, "solved");
   const current = view === "open" ? open : solved;
   const timeZone = useTimeZone();
+  const todos = useTodos(team.id);
+  const todoCounts = useMemo(() => {
+    const counts: Record<string, { total: number; done: number }> = {};
+    for (const t of todos.data?.todos ?? []) {
+      if (!t.source_issue) continue;
+      const c = (counts[t.source_issue.id] ??= { total: 0, done: 0 });
+      c.total += 1;
+      if (t.done_at) c.done += 1;
+    }
+    return counts;
+  }, [todos.data]);
 
   return (
     <Card id="issues">
@@ -71,7 +82,7 @@ export function IssuesSection({ team, description }: Props) {
         ) : view === "open" ? (
           <ol className="space-y-2" aria-label="Open issues in priority order">
             {current.data.map((issue, index) => (
-              <OpenIssue key={issue.id} team={team} issue={issue} rank={index + 1} />
+              <OpenIssue key={issue.id} team={team} issue={issue} rank={index + 1} todoCount={todoCounts[issue.id]} />
             ))}
           </ol>
         ) : (
@@ -136,7 +147,17 @@ function NewIssueForm({ teamId }: { teamId: string }) {
   );
 }
 
-function OpenIssue({ team, issue, rank }: { team: Team; issue: Issue; rank: number }) {
+function OpenIssue({
+  team,
+  issue,
+  rank,
+  todoCount,
+}: {
+  team: Team;
+  issue: Issue;
+  rank: number;
+  todoCount?: { total: number; done: number };
+}) {
   const setPriority = useSetPriority(team.id);
   const me = useMe();
   const timeZone = useTimeZone();
@@ -159,6 +180,13 @@ function OpenIssue({ team, issue, rank }: { team: Team; issue: Issue; rank: numb
               <Badge variant="outline" className="gap-1">
                 <BarChart3 className="size-3" aria-hidden />
                 {issue.source.measurable_name} · week of {formatDay(issue.source.week_start)}
+              </Badge>
+            )}
+            {todoCount && (
+              <Badge variant="secondary" className="gap-1 tabular-nums">
+                <ListTodo className="size-3" aria-hidden />
+                {todoCount.total} To-Do{todoCount.total === 1 ? "" : "s"}
+                {todoCount.done > 0 && ` · ${todoCount.done} done`}
               </Badge>
             )}
           </div>

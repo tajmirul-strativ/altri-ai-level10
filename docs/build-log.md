@@ -59,3 +59,9 @@ What was built, why, and what was traded off. Newest last. Design detail: [desig
 ## 2026-11-21 — Submission docs
 - [README.md](../README.md): run, test, rules report, fixtures/clock note, assumptions, limitations, AI tools (draft — owner to confirm).
 - [decision-record.md](decision-record.md) rewritten as the one-page answer to brief 2.8. Summary snapshot (§5) described, not built.
+
+## 2026-11-21 — To-Dos grouped by Issue
+- Meeting panel "New To-Dos from this meeting" groups To-Dos under their Issue (open Issues in Issue order, then solved ones with a Solved badge) instead of a link line per To-Do ([conclude-panel.tsx](../frontend/src/features/meeting/conclude-panel.tsx)).
+- Each open Issue shows a "N To-Dos · M done" chip ([issues-section.tsx](../frontend/src/features/issues/issues-section.tsx)), so the link reads both ways.
+- Rejected: nesting To-Dos inside Issue cards — solving an Issue removes it from the open list and its To-Dos would vanish.
+- Timer shows minutes past 60 as "60:00", not "1:00:00".
