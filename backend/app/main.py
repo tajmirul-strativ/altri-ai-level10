@@ -1,5 +1,7 @@
 """FastAPI application. OpenAPI docs at /api/docs."""
 
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI
@@ -7,8 +9,16 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app import errors
-from app.api import auth, issues, meetings, scorecard, teams, todos_rocks
+from app.api import auth, events, issues, meetings, scorecard, teams, todos_rocks
 from app.db import get_db
+from app.realtime import stop_brokers
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    yield
+    await stop_brokers()
+
 
 app = FastAPI(
     title="Level 10 Meeting API",
@@ -20,10 +30,11 @@ app = FastAPI(
     ),
     docs_url="/api/docs",
     openapi_url="/api/openapi.json",
+    lifespan=lifespan,
 )
 errors.install(app)
 
-for router in (auth, teams, scorecard, issues, todos_rocks, meetings):
+for router in (auth, teams, scorecard, issues, todos_rocks, meetings, events):
     app.include_router(router.router)
 
 

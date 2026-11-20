@@ -164,9 +164,8 @@ Prefix `/api`. JSON. OpenAPI docs at `/api/docs`; the frontend's TypeScript type
 
 1. A write commits, then calls `pg_notify('team_events', {team_id, type, payload})`.
 2. Each API process `LISTEN`s and forwards the event to its SSE subscribers for that team. Works with several server processes.
-3. Event types:
-   - `meeting`: the full meeting state (section, section_started_at, facilitator, attendees, ratings, ended_at, server_now).
-   - `invalidate`: which data changed (`scorecard`, `issues`, `todos`). The browser refetches it through TanStack Query.
+3. One event type, `change`, saying **what** changed: `{"resources": ["issues"]}`, plus `meeting_id` for meeting changes. Resources: `scorecard`, `issues`, `todos`, `meeting`. The browser re-reads those through TanStack Query (for `meeting`: `GET …/meetings/{id}`). The stream starts with `ready`.
+   - *Changed from the first draft*, which pushed the full meeting state in the event. Re-reading is one extra request (well inside the ~1 s budget) and uses exactly the same path as recovery after a reconnect, so there's one code path to get right.
 4. A heartbeat every 15 s keeps proxies from closing the stream.
 
 **Timer.** The server sends `section_started_at` and `server_now`. The browser computes the offset between its own clock and `server_now`, and counts up locally. Elapsed time over the section's limit shows as "N min over". Nothing advances automatically.

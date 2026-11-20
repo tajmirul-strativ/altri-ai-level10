@@ -21,6 +21,7 @@ class Settings(BaseSettings):
 
     session_secret: str = "dev-only-change-me"
     cookie_secure: bool = False  # set true behind HTTPS
+    sse_heartbeat_seconds: float = 15
 
     # docs/seed.json at the repo root (mounted at /docs in Docker).
     seed_path: Path = Path(__file__).resolve().parents[2] / "docs" / "seed.json"

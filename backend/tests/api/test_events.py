@@ -130,16 +130,18 @@ class EventReader:
         self.thread.start()
 
     def _run(self, path: str) -> None:
-        with self.client.stream("GET", path) as response:
-            self.headers = response.headers
-            event = "message"
-            for line in response.iter_lines():
-                if self._stop.is_set():
-                    return
-                if line.startswith("event:"):
-                    event = line.split(":", 1)[1].strip()
-                elif line.startswith("data:"):
-                    self.events.put((event, json.loads(line.split(":", 1)[1])))
+        try:
+            with self.client.stream("GET", path) as response:
+                self.headers = response.headers
+                event = "message"
+                for line in response.iter_lines():
+                    if line.startswith("event:"):
+                        event = line.split(":", 1)[1].strip()
+                    elif line.startswith("data:"):
+                        self.events.put((event, json.loads(line.split(":", 1)[1])))
+        except (httpx.HTTPError, RuntimeError):
+            if not self._stop.is_set():  # only closing the reader may end the stream
+                raise
 
     def next(self, timeout: float = 2) -> tuple[str, Any]:
         return self.events.get(timeout=timeout)
