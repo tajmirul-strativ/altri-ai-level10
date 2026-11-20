@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     clock_mode: Literal["frozen", "running"] = "running"
 
     session_secret: str = "dev-only-change-me"
+    cookie_secure: bool = False  # set true behind HTTPS
 
     # docs/seed.json at the repo root (mounted at /docs in Docker).
     seed_path: Path = Path(__file__).resolve().parents[2] / "docs" / "seed.json"
