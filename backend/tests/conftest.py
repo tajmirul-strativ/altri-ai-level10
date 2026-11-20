@@ -20,16 +20,14 @@ from collections.abc import Iterator
 from datetime import UTC, datetime
 
 import pytest
-from alembic import command
-from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import Connection, Engine, create_engine, text
-from sqlalchemy.engine import make_url
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session
 
 from app.clock import FrozenClock, get_clock
 from app.db import get_db
 from app.main import app
+from tests.dbutil import alembic, recreate_database
 
 SEED_NOW = datetime(2026, 11, 11, 15, 0, tzinfo=UTC)  # the seed's APP_NOW
 
@@ -38,28 +36,12 @@ TEST_DATABASE_URL = os.environ.get(
 )
 
 
-def _recreate_database(url: str) -> None:
-    target = make_url(url)
-    admin = create_engine(target.set(database="postgres"), isolation_level="AUTOCOMMIT")
-    with admin.connect() as conn:
-        conn.execute(text(f'DROP DATABASE IF EXISTS "{target.database}" WITH (FORCE)'))
-        conn.execute(text(f'CREATE DATABASE "{target.database}"'))
-    admin.dispose()
-
-
-def _migrate(connection: Connection) -> None:
-    cfg = Config("alembic.ini")
-    cfg.attributes["connection"] = connection
-    cfg.attributes["configure_logger"] = False
-    command.upgrade(cfg, "head")
-
-
 @pytest.fixture(scope="session")
 def engine() -> Iterator[Engine]:
-    _recreate_database(TEST_DATABASE_URL)
+    recreate_database(TEST_DATABASE_URL)
     eng = create_engine(TEST_DATABASE_URL)
     with eng.begin() as conn:
-        _migrate(conn)
+        alembic(conn, "upgrade", "head")
     yield eng
     eng.dispose()
 
