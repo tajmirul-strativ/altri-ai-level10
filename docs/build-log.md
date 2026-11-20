@@ -1,0 +1,57 @@
+# Build log
+
+What was built, why, and what was traded off. Newest last. Design detail: [design.md](design.md). Reviewer-facing summary: [decision-record.md](decision-record.md).
+
+## 2026-11-20 — Docs and expected answer
+- Brief, seed and starter README copied from the Drive folder into `docs/`. Design agreed in [design.md](design.md).
+- `backend/tests/expected_rules_report.json`: the rules report for the seed, worked out by hand from the spec and cross-checked with a throwaway script. Everything after is tested against it.
+- Process: test-first. A failing test is committed (`(red)`) before the code that passes it (`(green)`).
+
+## 2026-11-20 — Test infrastructure and clock
+- Postgres in Docker on host port 5433 (a local Postgres uses 5432). `make test` runs everything in Docker; `make test-local` runs backend tests on the host.
+- Test DB is migrated and seeded once per session; each test runs in a rolled-back transaction ([conftest.py](../backend/tests/conftest.py)).
+- One source of "now": [clock.py](../backend/app/clock.py). `FrozenClock` (tests, rules report) and `RunningClock` (app: starts at `APP_NOW`, then ticks). A frozen app clock would freeze the meeting timer.
+- Known limit: restarting the API resets the running clock to `APP_NOW`.
+
+## 2026-11-20 — Business rules
+- Pure functions in [rules.py](../backend/app/rules.py); weeks and days in company time in [company_time.py](../backend/app/company_time.py) (zoneinfo, so the 169-hour DST week is correct).
+- `Decimal` half-up everywhere (Python's `round` gives 8.2 for 8.25). The 90 % target compares whole numbers, not the rounded percent.
+- Choices the spec leaves open: done before the due week counts; Monday 00:00:00 is late; a Complete Rock with Milestones shows its Milestone ratio.
+- Renamed planned `app/time.py` to `company_time.py` (clash with stdlib `time`).
+
+## 2026-11-20 — Schema
+- One plain-SQL migration: [0001_initial_schema.py](../backend/migrations/versions/0001_initial_schema.py). CHECKs for every enum/range, composite FKs keep sources and owners inside the team.
+- Partial unique indexes: one unsolved Issue per Measurable+week; one active meeting per team.
+- Role rules a FK can't express (Observers can't own/facilitate/rate; non-member Admins may own Issues and facilitate but not own To-Dos) in a trigger raising SQLSTATE 23514, plus the same checks in the API.
+- Text ids kept from the seed; new ids continue the style (`i10`, `t42`, `mt3`) from per-table sequences.
+- `tests/test_models.py` fails if ORM models drift from the migration.
+
+## 2026-11-20 — Seed, rules report, CLI
+- [seed.py](../backend/app/seed.py) inserts missing seed rows only (rerun never overwrites user edits); `reset` truncates and reloads. *Changed from design draft's "upsert".*
+- [report.py](../backend/app/report.py) uses the same rule functions as the API. `make rules-report` (= `python -m app.cli rules-report --fresh`) runs on a throwaway seeded database so app data is never touched. Output committed as `rules_report.json`.
+- Meeting summary ([summary.py](../backend/app/summary.py)) counts Issues solved / To-Dos created by the meeting's time window. *Changed from the earlier agreed `meeting_id` column:* one rule for seeded and new meetings. Summaries are computed live; freezing them at End is described only (brief allows).
+
+## 2026-11-20 — REST API and authorization
+- Every team route depends on `read_team` / `write_team` ([deps.py](../backend/app/deps.py)). Unknown or inaccessible team → 403 (same response, so ids can't be probed). Records reached through the wrong team → 404.
+- Session: signed httpOnly cookie holding the user id ([session.py](../backend/app/session.py)); user picker login (spec allows).
+- Make it an Issue: `INSERT … ON CONFLICT DO NOTHING` on the partial index, then select ([services/issues.py](../backend/app/services/issues.py)). Verified the concurrency test fails against a naive check-then-insert.
+- Meeting advance is a conditional update (`WHERE section = :from`); a stale click gets 409.
+- Inputs forbid unknown fields; strict ints/bools so `"8"` or `"yes"` are rejected.
+
+## 2026-11-20 — Live updates (SSE)
+- Writes call `pg_notify` inside their transaction ([events.py](../backend/app/events.py)), so only committed changes are announced. One LISTEN connection per process fans out to SSE streams ([realtime.py](../backend/app/realtime.py)).
+- Events only name what changed; browsers re-read over REST, the same path as reconnect recovery. *Changed from design draft,* which pushed full meeting state.
+- Rejected WebSocket: updates only flow server→browser; SSE reconnects by itself and carries the cookie.
+
+## 2026-11-20 — Frontend
+- Next.js 16 + shadcn/ui (Base UI flavour) + TanStack Query + react-hook-form/zod. Types generated from OpenAPI (`pnpm gen:api`).
+- Used lightly: client-rendered pages, `/api` proxied to FastAPI via rewrites (one origin, first-party cookie). `cacheComponents` off (live per-user data).
+- `compress: false` in [next.config.ts](../frontend/next.config.ts): gzip held back SSE through the proxy.
+- Times shown in company time ([time.ts](../frontend/src/lib/time.ts)); the browser never computes weeks.
+- Timer: server sends `section_started_at` + `server_now`; the browser corrects for its own clock offset ([use-section-timer.ts](../frontend/src/hooks/use-section-timer.ts)).
+- Not using the Strativ design skill: the brief requires shadcn/ui and this is an Altri submission.
+
+## 2026-11-21 — Docker and end-to-end test
+- Frontend image is a Next standalone build; `docker compose up` starts db, API (migrate + seed + serve) and web.
+- Two-browser Playwright test ([meeting-sync.spec.ts](../frontend/e2e/meeting-sync.spec.ts)) runs in the Playwright image via `make test`; traces of failures land in `frontend/test-results/`.
+- E2E assertions don't depend on the clock, so the stack keeps its running clock.

@@ -1,4 +1,4 @@
-.PHONY: up down test test-backend test-local rules-report reset db-up
+.PHONY: up down test test-backend test-e2e test-local rules-report reset db-up
 
 APP_NOW ?= 2026-11-11T15:00:00Z
 
@@ -10,11 +10,16 @@ down:
 	docker compose down
 
 ## Run every test suite unattended (the documented test command).
-test: test-backend
+test: test-backend test-e2e
 
 ## Backend tests inside Docker against the compose Postgres.
 test-backend:
 	docker compose --profile test run --rm --build backend-tests
+
+## Two-browser Playwright test against the full stack (started if needed).
+test-e2e:
+	docker compose up -d --build --wait frontend
+	docker compose --profile test run --rm --build e2e
 
 ## Backend tests on the host (needs uv); starts only the database container.
 test-local: db-up

@@ -69,5 +69,19 @@ services:
         condition: service_healthy
     command: ["uv", "run", "--frozen", "pytest"]
 
+  # Two-browser end-to-end test against the running stack: `make test`
+  e2e:
+    profiles: ["test"]
+    build:
+      context: ./frontend
+      dockerfile: e2e.Dockerfile
+    environment:
+      E2E_BASE_URL: http://frontend:3000
+    volumes:
+      - ./frontend/test-results:/e2e/test-results   # traces of failed tests
+    depends_on:
+      frontend:
+        condition: service_healthy
+
 volumes:
   db-data:
