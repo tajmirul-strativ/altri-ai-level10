@@ -239,12 +239,12 @@ docs/           brief, seed, this design, decision record
 docker-compose.yml · Makefile · README.md · rules_report.json
 ```
 
-`docker compose up` starts Postgres, runs migrations and the seed (safe to rerun: upserts by id), then starts the API and the frontend.
+`docker compose up` starts Postgres, runs migrations and the seed (safe to rerun: inserts missing seed rows, never overwrites existing ones), then starts the API and the frontend.
 
 ## 11. Resolved decisions (2026-11-20)
 
 1. Meetings link to Issues solved and To-Dos created by time window, not a stored `meeting_id` (§3).
-2. Rerunning the seed upserts seed rows and keeps user-created data. `make reset` wipes and re-seeds for a "freshly seeded" database (rules report).
+2. Rerunning the seed inserts only missing seed rows: it never overwrites existing rows, so user edits and user-created data survive. `make reset` wipes and re-seeds for a "freshly seeded" database (rules report).
 3. Observer and "member or Admin" checks are enforced twice: in the API (clean errors) and by a database trigger (safety net) (§3).
 4. An Admin who isn't a team member can own Issues, facilitate, attend and rate in that team, but can't own To-Dos there (§3).
 5. Frontend stays on Next.js as the brief requires, used lightly (§8).

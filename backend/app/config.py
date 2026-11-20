@@ -2,6 +2,7 @@
 
 from datetime import datetime
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,6 +20,9 @@ class Settings(BaseSettings):
     clock_mode: Literal["frozen", "running"] = "running"
 
     session_secret: str = "dev-only-change-me"
+
+    # docs/seed.json at the repo root (mounted at /docs in Docker).
+    seed_path: Path = Path(__file__).resolve().parents[2] / "docs" / "seed.json"
 
 
 @lru_cache

@@ -21,6 +21,8 @@ services:
     build: ./backend
     environment:
       TEST_DATABASE_URL: postgresql+psycopg://l10:l10@db:5432/l10_test
+    volumes:
+      - ./docs:/docs:ro   # seed.json
     depends_on:
       db:
         condition: service_healthy
