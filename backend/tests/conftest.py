@@ -7,11 +7,17 @@ Database strategy
   outer transaction through a SAVEPOINT, so the commit never reaches the database.
 - Tests that need real commits (concurrency) get their own fixture later.
 
+Clock strategy
+- Every test runs on a FrozenClock set to the seed's APP_NOW (`clock` fixture).
+  A test moves it with `clock.set(...)` / `clock.advance(...)`, e.g. to one minute
+  before a week boundary. The API sees the same clock through the get_clock override.
+
 Point `TEST_DATABASE_URL` at any Postgres server the tests may drop and recreate a database on.
 """
 
 import os
 from collections.abc import Iterator
+from datetime import UTC, datetime
 
 import pytest
 from alembic import command
@@ -21,8 +27,11 @@ from sqlalchemy import Connection, Engine, create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session
 
+from app.clock import FrozenClock, get_clock
 from app.db import get_db
 from app.main import app
+
+SEED_NOW = datetime(2026, 11, 11, 15, 0, tzinfo=UTC)  # the seed's APP_NOW
 
 TEST_DATABASE_URL = os.environ.get(
     "TEST_DATABASE_URL", "postgresql+psycopg://l10:l10@localhost:5433/l10_test"
@@ -70,9 +79,15 @@ def db(engine: Engine) -> Iterator[Session]:
 
 
 @pytest.fixture
-def client(db: Session) -> Iterator[TestClient]:
-    """API client whose requests share the test's rolled-back session."""
+def clock() -> FrozenClock:
+    return FrozenClock(SEED_NOW)
+
+
+@pytest.fixture
+def client(db: Session, clock: FrozenClock) -> Iterator[TestClient]:
+    """API client sharing the test's rolled-back session and frozen clock."""
     app.dependency_overrides[get_db] = lambda: db
+    app.dependency_overrides[get_clock] = lambda: clock
     try:
         with TestClient(app) as c:
             yield c
