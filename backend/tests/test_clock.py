@@ -1,5 +1,6 @@
 """The app's only source of "now" (design.md §2)."""
 
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -51,11 +52,20 @@ def test_clocks_reject_naive_datetimes(clock_cls: type) -> None:
         clock_cls(datetime(2026, 11, 11, 15, 0))
 
 
-@pytest.mark.parametrize("clock_cls", [FrozenClock, RunningClock])
-def test_clocks_return_utc(clock_cls: type) -> None:
-    chicago_9am = datetime.fromisoformat("2026-11-11T09:00:00-06:00")
+CHICAGO_9AM = datetime.fromisoformat("2026-11-11T09:00:00-06:00")
 
-    now = clock_cls(chicago_9am).now()
+
+@pytest.mark.parametrize(
+    "make_clock",
+    [
+        lambda: FrozenClock(CHICAGO_9AM),
+        # Fake tick: with the real monotonic clock, time passes between creating and reading.
+        lambda: RunningClock(CHICAGO_9AM, monotonic=FakeMonotonic()),
+    ],
+    ids=["frozen", "running"],
+)
+def test_clocks_return_utc(make_clock: Callable[[], FrozenClock | RunningClock]) -> None:
+    now = make_clock().now()
 
     assert now == SEED_NOW
     assert now.utcoffset() == timedelta(0)
