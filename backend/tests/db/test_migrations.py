@@ -23,6 +23,7 @@ TABLES = {
     "meetings",
     "meeting_attendees",
     "meeting_ratings",
+    "app_clock",
 }
 
 

@@ -266,3 +266,13 @@ class MeetingRating(Base):
     meeting_id: Mapped[str] = mapped_column(Text, primary_key=True)
     user_id: Mapped[str] = mapped_column(Text, primary_key=True)
     rating: Mapped[int] = mapped_column(SmallInteger)
+
+
+class AppClock(Base):
+    """One row: when the running clock started for the current APP_NOW (app/clock.py)."""
+
+    __tablename__ = "app_clock"
+
+    id: Mapped[int] = mapped_column(SmallInteger, primary_key=True, server_default=text("1"))
+    app_now: Mapped[datetime] = mapped_column(TZ_DATETIME)
+    started_at: Mapped[datetime] = mapped_column(TZ_DATETIME)
