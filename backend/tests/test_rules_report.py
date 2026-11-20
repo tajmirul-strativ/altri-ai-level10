@@ -107,3 +107,18 @@ def test_cli_rules_report_reads_app_now(scratch_url: str) -> None:
     printed = run_cli(scratch_url, "rules-report", APP_NOW="2026-11-16T15:00:00Z")
 
     assert json.loads(printed)["now"] == "2026-11-16T15:00:00Z"
+
+
+def test_cli_fresh_report_uses_a_throwaway_seeded_database(scratch_url: str) -> None:
+    # The app database has user changes; --fresh must ignore them and leave them alone.
+    run_cli(scratch_url, "seed")
+    engine = create_engine(scratch_url)
+    with engine.begin() as conn:
+        conn.exec_driver_sql("UPDATE issues SET priority = 1 WHERE id = 'i2'")
+
+    printed = run_cli(scratch_url, "rules-report", "--fresh")
+
+    assert json.loads(printed) == EXPECTED
+    with engine.connect() as conn:
+        assert conn.exec_driver_sql("SELECT priority FROM issues WHERE id = 'i2'").scalar() == 1
+    engine.dispose()
