@@ -55,3 +55,7 @@ What was built, why, and what was traded off. Newest last. Design detail: [desig
 - Frontend image is a Next standalone build; `docker compose up` starts db, API (migrate + seed + serve) and web.
 - Two-browser Playwright test ([meeting-sync.spec.ts](../frontend/e2e/meeting-sync.spec.ts)) runs in the Playwright image via `make test`; traces of failures land in `frontend/test-results/`.
 - E2E assertions don't depend on the clock, so the stack keeps its running clock.
+
+## 2026-11-21 — Submission docs
+- [README.md](../README.md): run, test, rules report, fixtures/clock note, assumptions, limitations, AI tools (draft — owner to confirm).
+- [decision-record.md](decision-record.md) rewritten as the one-page answer to brief 2.8. Summary snapshot (§5) described, not built.
