@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: l10
+      POSTGRES_PASSWORD: l10
+      POSTGRES_DB: l10
+    ports:
+      - "5433:5432"   # 5433 on the host, so it doesn't clash with a local Postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U l10 -d l10"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Runs the backend test suite against the db service: `make test`
+  backend-tests:
+    profiles: ["test"]
+    build: ./backend
+    environment:
+      TEST_DATABASE_URL: postgresql+psycopg://l10:l10@db:5432/l10_test
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["uv", "run", "--frozen", "pytest"]
+
+volumes:
+  db-data:
