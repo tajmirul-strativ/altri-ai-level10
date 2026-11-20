@@ -14,7 +14,7 @@ Stack (fixed by the brief): Next.js + TypeScript + shadcn/ui + Tailwind · FastA
 
 ## 2. Time and the clock
 
-All time logic lives in one backend module (`app/time.py`). Nothing else reads the clock or converts time zones.
+Time logic lives in two backend modules: `app/clock.py` (the only source of "now") and `app/company_time.py` (weeks, days and quarters in company time). Nothing else reads the clock or converts time zones.
 
 | Concept | Definition |
 | --- | --- |
