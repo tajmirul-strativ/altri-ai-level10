@@ -41,6 +41,7 @@ Prints every computed value from brief 2.6 as JSON, for a **freshly seeded** thr
 - [Decision record](docs/decision-record.md) — the choices in brief 2.8, with tradeoffs (one page).
 - [Design](docs/design.md) — data model, API, real-time and testing in detail.
 - [Build log](docs/build-log.md) — what was built, in order, and what changed along the way.
+- [Video walkthrough](https://drive.google.com/file/d/1LjxEd-JaHxtPyix4FFMr5tZ2QK1Mwm4_/view?usp=sharing) — two browsers in one meeting, and the main decisions (under 7 min).
 
 ## Assumptions
 
