@@ -21,7 +21,7 @@ docker compose up --build        # or: make up
 make test
 ```
 
-Runs, unattended in Docker: the backend suite (395 tests: rules with boundary cases, database constraints, migrations, API and authorization, concurrency, live events) and the two-browser Playwright test.
+Runs, unattended in Docker: the backend suite (400 tests: rules with boundary cases, database constraints, migrations, API and authorization, concurrency, live events) and the two-browser Playwright test.
 
 - **Fixtures:** a test database is migrated and seeded once per run; every test runs in a transaction that is rolled back, so each starts from the fresh seed. Concurrency and live-event tests need real commits and use their own scratch database, reset to the seed per test.
 - **Clock:** tests use a frozen clock at `APP_NOW` that a test can move (e.g. to one minute before a week boundary). The Playwright test's assertions don't depend on time.
